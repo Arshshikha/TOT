@@ -1,5 +1,3 @@
-
-
 import React from "react";
 import { CommonActions } from "@react-navigation/native";
 import {
@@ -27,10 +25,10 @@ export default function MyAccountScreen({ navigation }) {
   const { cartItems } = useCart();
   const { user, logout } = useUser();
 
-  // ================== LOGOUT FUNCTION ==================
+  
   const handleLogout = () => {
     if (user && user?.name) {
-      // ✅ Case 1: If user is logged in
+      
       Alert.alert("Logout", "Are you sure you want to log out?", [
         { text: "Cancel", style: "cancel" },
         {
@@ -48,7 +46,7 @@ export default function MyAccountScreen({ navigation }) {
         },
       ]);
     } else {
-      // ✅ Case 2: If user is NOT logged in
+     
       Alert.alert("Info", "You are not logged in.", [
         {
           text: "OK",
@@ -60,12 +58,14 @@ export default function MyAccountScreen({ navigation }) {
     }
   };
 
-  // ================== SETTINGS DATA ==================
+  
   const settingsItems = [
+   
     {
       id: "1",
       label: "Saved Address",
       icon: require("../../../assets/icons/Location-1.png"),
+      screen: "SavedAddressScreen",
     },
     {
       id: "2",
@@ -90,6 +90,7 @@ export default function MyAccountScreen({ navigation }) {
       id: "3",
       label: "Reviews & Ratings",
       icon: require("../../../assets/icons/Location-1.png"),
+      screen: "MyReviewsScreen",
     },
   ];
 
@@ -98,21 +99,42 @@ export default function MyAccountScreen({ navigation }) {
       id: "1",
       label: "Become a Vendor",
       icon: require("../../../assets/icons/Vendor.png"),
+      screen: "BecomeVendorScreen",
     },
     {
       id: "2",
       label: "Refer & Earn",
       icon: require("../../../assets/icons/refer.png"),
+      screen: "ReferAndEarnScreen",
     },
   ];
 
   const supportItems = [
     {
+    id: "0",
+    label: "Help & Support",
+    icon: require("../../../assets/icons/customer-service.png"),
+    screen: "HelpSupportScreen",
+  },
+    {
       id: "1",
       label: "Contact Us",
       icon: require("../../../assets/icons/customer-service.png"),
+      screen: "ContactUsScreen",
     },
-    { id: "2", label: "FAQs", icon: require("../../../assets/icons/faq.png") },
+    {
+      id: "2",
+      label: "FAQs",
+      icon: require("../../../assets/icons/faq.png"),
+      screen: "FAQsScreen",
+    },
+    {
+  id: "3",
+  label: "Report a Problem",
+ icon: require("../../../assets/icons/termsconditions.png"),
+  screen: "ReportProblemScreen",
+}
+
   ];
 
   const legalItems = [
@@ -133,7 +155,7 @@ export default function MyAccountScreen({ navigation }) {
     },
   ];
 
-  // ================== MAIN RETURN ==================
+  
   return (
     <SafeAreaView style={styles.container}>
       {/* ========== Header ========== */}
@@ -220,50 +242,46 @@ export default function MyAccountScreen({ navigation }) {
         </View>
 
         {/* ========== Active Orders ========== */}
-       <View style={styles.section}> 
-  <View style={styles.sectionHeader}>
-    <Text style={styles.sectionTitle}>My Active Orders</Text>
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>My Active Orders</Text>
 
-    {/* ✅ Show "View All" button only if activeOrders exist */}
-    {activeOrders.length > 0 && (
-      <TouchableOpacity onPress={() => navigation.navigate("ActiveOrdersScreen")}>
-        <Text style={styles.viewAll}>View All →</Text>
-      </TouchableOpacity>
-    )}
-  </View>
-
-  {activeOrders.length === 0 ? (
-    // ✅ Show message if no active orders
-    <View style={styles.noOrdersContainer}>
-      <Text style={styles.noOrdersText}>No active orders</Text>
-    </View>
-  ) : (
-    // ✅ Otherwise show the list
-    <FlatList
-      data={activeOrders}
-      horizontal
-      keyExtractor={(item) => item.id.toString()}
-      showsHorizontalScrollIndicator={false}
-      renderItem={({ item }) => (
-        <TouchableOpacity style={styles.orderCard}>
-          <Image source={item.image} style={styles.orderImage} />
-          <View style={{ flex: 1, marginLeft: 8 }}>
-            <Text style={styles.orderStatus}>{item.status}</Text>
-            <Text style={styles.orderDelivery}>{item.delivery}</Text>
-        <Text style={styles.orderDetails}>
-  Size: {item.size} | Qty: {item.qty} | ₹
-  {item.price.toString().replace(/[^0-9.]/g, "")}
-</Text>
-
-
+            {activeOrders.length > 0 && (
+              <TouchableOpacity
+                onPress={() => navigation.navigate("ActiveOrdersScreen")}
+              >
+                <Text style={styles.viewAll}>View All →</Text>
+              </TouchableOpacity>
+            )}
           </View>
-          <Ionicons name="chevron-forward" size={20} color="#FF6600" />
-        </TouchableOpacity>
-      )}
-    />
-  )}
-</View>
 
+          {activeOrders.length === 0 ? (
+            <View style={styles.noOrdersContainer}>
+              <Text style={styles.noOrdersText}>No active orders</Text>
+            </View>
+          ) : (
+            <FlatList
+              data={activeOrders}
+              horizontal
+              keyExtractor={(item) => item.id.toString()}
+              showsHorizontalScrollIndicator={false}
+              renderItem={({ item }) => (
+                <TouchableOpacity style={styles.orderCard}>
+                  <Image source={item.image} style={styles.orderImage} />
+                  <View style={{ flex: 1, marginLeft: 8 }}>
+                    <Text style={styles.orderStatus}>{item.status}</Text>
+                    <Text style={styles.orderDelivery}>{item.delivery}</Text>
+                    <Text style={styles.orderDetails}>
+                      Size: {item.size} | Qty: {item.qty} | ₹
+                      {item.price.toString().replace(/[^0-9.]/g, "")}
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color="#FF6600" />
+                </TouchableOpacity>
+              )}
+            />
+          )}
+        </View>
 
         {/* ========== Account Settings ========== */}
         <View style={styles.section}>
@@ -298,26 +316,172 @@ export default function MyAccountScreen({ navigation }) {
 
         {/* ========== Other Sections ========== */}
         {[activitiesItems, supplierItems, supportItems, legalItems].map(
-          (section, index) => (
-            <View key={index} style={styles.section}>
-              <Text style={styles.sectionTitle}>
-                {index === 0
-                  ? "My Activities"
-                  : index === 1
-                  ? "Become a Supplier"
-                  : index === 2
-                  ? "Support"
-                  : "Legal"}
-              </Text>
-              {section.map((item) => (
-                <TouchableOpacity key={item.id} style={styles.row}>
-                  <Image source={item.icon} style={styles.rowIcon} />
-                  <Text style={styles.rowText}>{item.label}</Text>
-                  <Ionicons name="chevron-forward" size={20} color="#FF6600" />
-                </TouchableOpacity>
-              ))}
-            </View>
-          )
+          (section, index) => {
+            let sectionTitle = "";
+            switch (index) {
+              case 0:
+                sectionTitle = "My Activities";
+                break;
+              case 1:
+                sectionTitle = "Become a Supplier";
+                break;
+              case 2:
+                sectionTitle = "Support";
+                break;
+              case 3:
+                sectionTitle = "Legal";
+                break;
+            }
+
+            return (
+              <View key={index} style={styles.section}>
+                <Text style={styles.sectionTitle}>{sectionTitle}</Text>
+
+                {section.map((item) => {
+                  // ---------- Legal Section ----------
+                  if (index === 3) {
+                    return (
+                      <TouchableOpacity
+                        key={item.id}
+                        style={styles.row}
+                        onPress={() => {
+                          switch (item.label) {
+                            case "Privacy Policy":
+                              navigation.navigate("PrivacyPolicy");
+                              break;
+                            case "Terms & Conditions":
+                              navigation.navigate("TermsConditions");
+                              break;
+                            case "Return Policy":
+                              navigation.navigate("ReturnPolicy");
+                              break;
+                          }
+                        }}
+                      >
+                        <Image source={item.icon} style={styles.rowIcon} />
+                        <Text style={styles.rowText}>{item.label}</Text>
+                        <Ionicons
+                          name="chevron-forward"
+                          size={20}
+                          color="#FF6600"
+                        />
+                      </TouchableOpacity>
+                    );
+                  }
+
+                  // ---------- Activities Section ----------
+                  if (index === 0) {
+                    return (
+                      <TouchableOpacity
+                        key={item.id}
+                        style={styles.row}
+                        onPress={() => {
+                          if (!user?.name) {
+                            Alert.alert(
+                              "Login Required",
+                              "Please log in first.",
+                              [
+                                {
+                                  text: "OK",
+                                  onPress: () => {
+                                    navigation.navigate("Login", {
+                                      redirectTo: "OrderHistoryScreen",
+                                    });
+                                  },
+                                },
+                              ]
+                            );
+                            return;
+                          }
+
+                          switch (item.label) {
+                            case "Active Orders":
+                              navigation.navigate("ActiveOrdersScreen");
+                              break;
+                            case "Order History":
+                              navigation.navigate("OrderHistoryScreen");
+                              break;
+                            default:
+                              if (item.screen) navigation.navigate(item.screen);
+                              break;
+                          }
+                        }}
+                      >
+                        <Image source={item.icon} style={styles.rowIcon} />
+                        <Text style={styles.rowText}>{item.label}</Text>
+                        <Ionicons
+                          name="chevron-forward"
+                          size={20}
+                          color="#FF6600"
+                        />
+                      </TouchableOpacity>
+                    );
+                  }
+
+                  // ---------- Supplier Section ----------
+                  if (index === 1) {
+                    return (
+                      <TouchableOpacity
+                        key={item.id}
+                        style={styles.row}
+                        onPress={() => {
+                          if (!user?.name) {
+                            Alert.alert(
+                              "Login Required",
+                              "Please log in first.",
+                              [
+                                {
+                                  text: "OK",
+                                  onPress: () => {
+                                    navigation.navigate("Login", {
+                                      redirectTo: item.screen,
+                                    });
+                                  },
+                                },
+                              ]
+                            );
+                            return;
+                          }
+
+                          // Navigate exactly to the screen defined in supplierItems
+                          navigation.navigate(item.screen);
+                        }}
+                      >
+                        <Image source={item.icon} style={styles.rowIcon} />
+                        <Text style={styles.rowText}>{item.label}</Text>
+                        <Ionicons
+                          name="chevron-forward"
+                          size={20}
+                          color="#FF6600"
+                        />
+                      </TouchableOpacity>
+                    );
+                  }
+
+                  // ---------- Support Section ----------
+                  if (index === 2) {
+                    return (
+                      <TouchableOpacity
+                        key={item.id}
+                        style={styles.row}
+                        onPress={() => {
+                          if (item.screen) navigation.navigate(item.screen);
+                        }}
+                      >
+                        <Image source={item.icon} style={styles.rowIcon} />
+                        <Text style={styles.rowText}>{item.label}</Text>
+                        <Ionicons
+                          name="chevron-forward"
+                          size={20}
+                          color="#FF6600"
+                        />
+                      </TouchableOpacity>
+                    );
+                  }
+                })}
+              </View>
+            );
+          }
         )}
 
         {/* ========== Logout Button ========== */}
@@ -346,16 +510,15 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   noOrdersContainer: {
-  alignItems: "center",
-  justifyContent: "center",
-  paddingVertical: 20,
-},
-noOrdersText: {
-  fontSize: 16,
-  color: "#888",
-  fontStyle: "italic",
-},
-
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 20,
+  },
+  noOrdersText: {
+    fontSize: 16,
+    color: "#888",
+    fontStyle: "italic",
+  },
   headerTitle: {
     flex: 1,
     textAlign: "center",

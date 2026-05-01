@@ -326,7 +326,8 @@ if (cleanBrandName) {
 
   if (category) {
     // Show only selected category (e.g., "topwear" or "bottomwear")
-    products = brandData?.[category.toLowerCase()] || [];
+   products = brandData?.[category] || [];
+
   } else {
     // Show all products for that brand (topwear + bottomwear)
     const topwear = brandData?.topwear || [];

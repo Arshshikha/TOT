@@ -1,4 +1,4 @@
-import React from "react";
+import React from "react"; 
 import {
   View,
   Text,
@@ -23,6 +23,7 @@ type RootStackParamList = {
   ProductListingScreen: {
     category: string;
     brandName: string;
+    gender: "M" | "F";
   };
 };
 
@@ -103,12 +104,15 @@ const ViewAllCategoryScreen = () => {
   const renderCard = ({ item }: any) => (
     <TouchableOpacity
       style={styles.card}
-      onPress={() =>
-        navigation.navigate("ProductListingScreen", {
-          category: item.title,
-          brandName,
-        })
-      }
+     onPress={() =>
+  navigation.navigate("ProductListingScreen", {
+    category: categoryKey, // ✅ "topwear", "bottomwear"
+    subCategory: item.title, // ✅ "T-Shirts"
+    brandName,
+    gender,
+  })
+}
+
     >
       <Image source={item.image} style={styles.image} />
       <Text style={styles.cardTitle}>{item.title}</Text>

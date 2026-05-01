@@ -766,6 +766,8 @@ import { useWishlist } from "../../context/WishlistContext";
 import { useCart } from "../../context/CartContext";
 import { useOrders } from "../../context/OrderContext";
 
+import { useAddress } from "../../context/AddressContext";
+
 
 const { width } = Dimensions.get("window");
 
@@ -820,12 +822,21 @@ const ProductDetailsScreen: React.FC = () => {
 };
 
 const { placeOrder } = useOrders();
+const { selectedAddress } = useAddress();
+
 
 const handleOrderForTry = () => {
   if (!selectedSize) {
     alert("Please select a size before placing an order.");
     return;
   }
+  if (!selectedAddress) return alert("Please select address");
+
+navigation.navigate("OrderHistoryScreen", {
+  selectedSize,
+  selectedAddress, 
+});
+
 
   const orderData = {
     productId: product.id,
@@ -839,7 +850,7 @@ const handleOrderForTry = () => {
 
   placeOrder(orderData);
   alert("Order for Try placed successfully!");
-  navigation.navigate("OrdersScreen"); // Navigate to Orders section (optional)
+  navigation.navigate("OrderHistoryScreen"); // Navigate to Orders section (optional)
 };
 
 const [isCartSelected, setIsCartSelected] = useState(false);
@@ -1213,44 +1224,49 @@ const similarProducts =
             ))}
           </View>
          {/* 🔸 Delivery Address */}
-<Text style={{ fontSize: 14, fontWeight: "500", marginTop: 12 }}>Delivery to:</Text>
+{/* 🔸 Delivery Address */}
+{/* 🔸 Delivery Address */}
+<View style={styles.addressSection}>
+  <View style={styles.addressRow}>
+    
+    <View style={{ flex: 1 }}>
+      {/* 📍 Location Icon + Deliver To Label in ONE ROW */}
+      <View style={{ flexDirection: "row", alignItems: "center" }}>
+        <Image
+          source={require("../../../assets/icons/Location-1.png")} // you will update path if needed
+          style={styles.locationIcon}
+        />
+        <Text style={styles.addressLabel}>Deliver to</Text>
+      </View>
 
-<View
-  style={{
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    flexWrap: "wrap",
-    marginTop: 6,
-  }}
->
-  <Text
-    style={{
-      flex: 1,
-      color: "#333",
-      fontSize: 13,
-      marginRight: 10,
-      marginBottom: 12,
-    }}
-  >
-    {`${address.street}, ${address.landmark}, ${address.city} - ${address.pincode}`}
-  </Text>
+      {selectedAddress ? (
+        <>
+          <Text style={styles.addressTxt}>{selectedAddress.fullAddress}</Text>
+          {selectedAddress.phone && (
+            <Text style={styles.addressTxt}> {selectedAddress.phone}</Text>
+          )}
+        </>
+      ) : (
+        <Text style={[styles.addressTxt, { color: "#999" }]}>
+          Please select an address
+        </Text>
+      )}
+    </View>
 
-  <TouchableOpacity
-    style={{
-      paddingHorizontal: 10,
-      paddingVertical: 6,
-      borderWidth: 1,
-      borderColor: "#FF6F00",
-      borderRadius: 4,
-    }}
-    onPress={openModal} // ✅ Open modal
-  >
-    <Text style={{ color: "#FF6F00", fontSize: 13, fontWeight: "500" }}>
-      Change
-    </Text>
-  </TouchableOpacity>
+    {/* Change Button */}
+    <TouchableOpacity
+      style={styles.changeBtn}
+      onPress={() => navigation.navigate("SavedAddressScreen")}
+    >
+      <Text style={styles.changeTxt}>Change</Text>
+    </TouchableOpacity>
+
+  </View>
 </View>
+
+
+
+<View style={styles.divider} />
         </View>
          
         
@@ -1596,6 +1612,57 @@ const similarProducts =
 export default ProductDetailsScreen;
 
 const styles = StyleSheet.create({
+  addressSection: {
+    backgroundColor: "#FFF7F0", // soft orange tint like Ajio
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+
+  addressRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  addressLabel: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#000",
+  },
+locationIcon: {
+  width: 20,
+  height: 20,
+  marginRight: 6,
+  marginBottom:5,
+},
+
+
+  addressTxt: {
+    fontSize: 13,
+    color: "#333",
+    marginTop: 3,
+  },
+
+  changeBtn: {
+    marginLeft: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#FF6B00", // orange outline button
+  },
+
+  changeTxt: {
+    fontSize: 12,
+    color: "#FF6B00",
+    fontWeight: "700",
+    textTransform: "uppercase",
+  },
+
+  divider: {
+    height: 1,
+    backgroundColor: "#E5E5E5",
+    width: "100%",
+  },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -1660,6 +1727,48 @@ buttonTextActive: {
     borderWidth: 1,
     borderColor: "#FF6F00",
     borderRadius: 4,
+  },
+   addressSection: {
+    backgroundColor: "#FFFFFF",
+    padding: 10,
+    borderRadius: 12,
+    marginVertical: 12,
+    elevation: 3, // Android shadow
+    shadowColor: "#000", // iOS shadow
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  
+   
+    // orange border for theme
+  },
+
+  addressLabel: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#000000ff", // orange heading
+    marginBottom: 6,
+  },
+
+  addressTxt: {
+    fontSize: 14,
+    color: "#333", // dark text
+    marginBottom: 4,
+  },
+
+  changeBtn: {
+    alignSelf: "flex-start",
+    marginTop: 10,
+    backgroundColor: "#FF6B00", // orange button
+    paddingVertical: 8,
+    paddingHorizontal: 18,
+    borderRadius: 8,
+  },
+
+  changeTxt: {
+    color: "#FFFFFF", // white text
+    fontSize: 14,
+    fontWeight: "600",
+    letterSpacing: 0.5,
   },
   similarCard: {
     width: 160,
@@ -1808,10 +1917,4 @@ iconBackground: {
     alignItems: "center",
     marginRight: 6,
   },
-  
- 
-
-
-
-
-});
+  });

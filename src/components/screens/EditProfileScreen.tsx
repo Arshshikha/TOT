@@ -54,7 +54,7 @@ export default function EditProfileScreen({ navigation }: any) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#000" />
+          <Ionicons name="arrow-back" size={24} color="#000" marginTop="38" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Edit Profile</Text>
         <View style={{ width: 24 }} />
@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingVertical: 15,
   },
-  headerTitle: { fontSize: 18, fontWeight: "bold", color: "#000" },
+  headerTitle: { fontSize: 18, fontWeight: "bold", color: "#000",marginTop:38 },
   imageContainer: { alignItems: "center", marginTop: 30 },
   profileImage: { width: 110, height: 110, borderRadius: 55 },
   cameraButton: {

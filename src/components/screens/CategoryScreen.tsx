@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState } from "react"; 
 import {
   View,
   Text,
@@ -25,38 +25,38 @@ if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental
 interface Product {
   id: string;
   title: string;
-   image: any; 
+  image: any;
   price: string;
   brand?: string;
   name?: string;
-
 }
 
+// ✅ Product arrays for male and female
 const topWear: Product[] = [
-  { id: "1", title: "T-Shirts",  name: "T-Shirts" ,image: require("../../../assets/images/tshirt1.png"), price: "From ₹999" },
-  { id: "2", title: "Shirts",  name: "T-Shirts" ,image: require("../../../assets/images/tshirt2.png"), price: "From ₹999" },
-  { id: "3", title: "Sweatshirt", name: "T-Shirts" , image: require("../../../assets/images/tshirt3.png"), price: "From ₹999" },
-  { id: "4", title: "Hoodies",  name: "T-Shirts" ,image: require("../../../assets/images/tshirt4.png"), price: "From ₹999" },
+  { id: "1", title: "T-Shirts", name: "T-Shirts", image: require("../../../assets/images/tshirt1.png"), price: "From ₹999" },
+  { id: "2", title: "Shirts", name: "T-Shirts", image: require("../../../assets/images/tshirt2.png"), price: "From ₹999" },
+  { id: "3", title: "Sweatshirt", name: "T-Shirts", image: require("../../../assets/images/tshirt3.png"), price: "From ₹999" },
+  { id: "4", title: "Hoodies", name: "T-Shirts", image: require("../../../assets/images/tshirt4.png"), price: "From ₹999" },
 ];
 
 const bottomWear: Product[] = [
-  { id: "1", title: "Jeans", name: "T-Shirts" , image: require("../../../assets/images/bottom1.png"), price: "From ₹999" },
-  { id: "2", title: "Track Pants", name: "T-Shirts" , image: require("../../../assets/images/bottom2.png"), price: "From ₹999" },
-  { id: "3", title: "Skinny fit Jeans",  name: "T-Shirts" , image: require("../../../assets/images/bottom3.png"), price: "From ₹999" },
+  { id: "1", title: "Jeans", name: "T-Shirts", image: require("../../../assets/images/bottom1.png"), price: "From ₹999" },
+  { id: "2", title: "Track Pants", name: "T-Shirts", image: require("../../../assets/images/bottom2.png"), price: "From ₹999" },
+  { id: "3", title: "Skinny fit Jeans", name: "T-Shirts", image: require("../../../assets/images/bottom3.png"), price: "From ₹999" },
 ];
 
 const ethnicEssentials: Product[] = [
-  { id: "1", title: "Innerwear", name: "T-Shirts" , image: require("../../../assets/images/ethnic1.png"), price: "From ₹999" },
-  { id: "2", title: "Socks",  name: "T-Shirts" ,image: require("../../../assets/images/ethnic2.png"), price: "From ₹999" },
-  { id: "3", title: "Innerwear", name: "T-Shirts" , image: require("../../../assets/images/ethnic3.png"), price: "From ₹999" },
-  { id: "4", title: "Socks", name: "Socks" , image: require("../../../assets/images/ethnic4.png"), price: "From ₹999" },
+  { id: "1", title: "Innerwear", name: "T-Shirts", image: require("../../../assets/images/ethnic1.png"), price: "From ₹999" },
+  { id: "2", title: "Socks", name: "T-Shirts", image: require("../../../assets/images/ethnic2.png"), price: "From ₹999" },
+  { id: "3", title: "Innerwear", name: "T-Shirts", image: require("../../../assets/images/ethnic3.png"), price: "From ₹999" },
+  { id: "4", title: "Socks", name: "Socks", image: require("../../../assets/images/ethnic4.png"), price: "From ₹999" },
 ];
 
 const kidsFashion: Product[] = [
-  { id: "1", title: "T-Shirts",  name: "T-Shirts" ,image: require("../../../assets/images/kids1.png"), price: "From ₹999" },
-  { id: "2", title: "Shirts", name: "Shirts" , image: require("../../../assets/images/kids2.png"), price: "From ₹999" },
-  { id: "3", title: "Sweatshirts", name: "Sweatshirts" , image: require("../../../assets/images/kids3.png"), price: "From ₹999" },
-  { id: "4", title: "Sleeveless T-Shirts",  name: "Sleeveless T-Shirts" ,image: require("../../../assets/images/kids4.png"), price: "From ₹999" },
+  { id: "1", title: "T-Shirts", name: "T-Shirts", image: require("../../../assets/images/kids1.png"), price: "From ₹999" },
+  { id: "2", title: "Shirts", name: "Shirts", image: require("../../../assets/images/kids2.png"), price: "From ₹999" },
+  { id: "3", title: "Sweatshirts", name: "Sweatshirts", image: require("../../../assets/images/kids3.png"), price: "From ₹999" },
+  { id: "4", title: "Sleeveless T-Shirts", name: "Sleeveless T-Shirts", image: require("../../../assets/images/kids4.png"), price: "From ₹999" },
 ];
 
 const maleCategories = {
@@ -94,15 +94,17 @@ const CategoryScreen = () => {
 
   const categories = selectedGender === "M" ? maleCategories : femaleCategories;
 
-  // ✅ Make product cards clickable
+  // ✅ Render each product card
   const renderProductItem = ({ item }: { item: Product }) => (
     <TouchableOpacity
       activeOpacity={0.8}
       style={styles.productCard}
+      // ✅ Navigate to ProductListingScreen with selected sub-category
       onPress={() =>
         navigation.navigate("ProductListingScreen", {
           category: item.title,
           brandName,
+          gender: selectedGender, // ✅ Pass gender to filter products
         })
       }
     >
@@ -114,11 +116,13 @@ const CategoryScreen = () => {
     </TouchableOpacity>
   );
 
+  // ✅ Render each main category section
   const renderSection = (title: string, data: Product[], key: string) => (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>{title}</Text>
         <TouchableOpacity
+          // ✅ Navigate to ViewAllCategoryScreen when clicking "View All"
           onPress={() =>
             navigation.navigate("ViewAllCategoryScreen", {
               categoryKey: key.toLowerCase(),
@@ -158,7 +162,11 @@ const CategoryScreen = () => {
                 activeOpacity={0.7}
                 style={[
                   styles.genderButton,
+                  // ✅ Highlight gender button based on selection
                   selectedGender === g && styles.genderActive,
+                  // ✅ Updated background color logic
+                  g === "M" && selectedGender === "M" && { backgroundColor: "#007bff" },
+                  g === "F" && selectedGender === "F" && { backgroundColor: "#FF69B4" },
                 ]}
                 onPress={() => {
                   LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -195,7 +203,7 @@ const CategoryScreen = () => {
 
         {/* Close Button */}
         <TouchableOpacity style={styles.closeButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="close" size={16} color="#f67a7aff" />
+          <Ionicons name="close" size={20} color="#f67a7aff" />
           <Text style={styles.closeText}>CLOSE</Text>
         </TouchableOpacity>
       </View>
@@ -290,14 +298,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#d06b6bff",
+    borderColor: "#f67a7aff",
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 10,
     backgroundColor: "#fff",
     elevation: 5,
   },
-  closeText: { color: "#f67a7aff", fontWeight: "bold", marginLeft: 6 },
+  closeText: { color: "#f67a7aff", fontWeight: "normal", marginLeft: 6 },
 });
 
 export default CategoryScreen;

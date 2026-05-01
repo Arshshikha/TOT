@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect } from 'react'; 
 import {
   View,
   Text,
@@ -13,10 +13,13 @@ import { useNavigation } from '@react-navigation/native';
 
 const { width, height } = Dimensions.get('window');
 
+const AUTO_SLIDE_INTERVAL = 2000; // ⏱ Auto slide time (3 seconds)
+
 const IntroSlider: React.FC = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const navigation = useNavigation<any>();
+  const autoSlideTimer = useRef<NodeJS.Timeout | null>(null);
 
   const slide = slides[currentIndex];
 
@@ -36,10 +39,30 @@ const IntroSlider: React.FC = () => {
     ]).start();
   }, [currentIndex]);
 
+  // ▶ Auto slide logic
+  useEffect(() => {
+    if (autoSlideTimer.current) {
+      clearInterval(autoSlideTimer.current);
+    }
+
+    autoSlideTimer.current = setInterval(() => {
+      nextSlide();
+    }, AUTO_SLIDE_INTERVAL);
+
+    return () => {
+      if (autoSlideTimer.current) {
+        clearInterval(autoSlideTimer.current);
+      }
+    };
+  }, [currentIndex]);
+
   const nextSlide = () => {
     if (currentIndex < slides.length - 1) {
       setCurrentIndex(currentIndex + 1);
     } else {
+      if (autoSlideTimer.current) {
+        clearInterval(autoSlideTimer.current);
+      }
       navigation.replace('Login'); // Go to login screen
     }
   };
@@ -125,7 +148,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 490,
     textAlign: 'center',
-    
   },
   textContainer: {
     position: 'absolute',

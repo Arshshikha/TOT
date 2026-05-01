@@ -19,12 +19,14 @@ interface OrderContextType {
   orderHistory: Order[];
   placeOrder: (product: any) => void;
   completeOrder: (orderId: string) => void;
+  clearOrderHistory: () => void;        // ⬅ added
+  removeOrderById: (orderId: string) => void; // ⬅ added
 }
 
-// ✅ Create the context with an explicit type
+// Create the context with an explicit type
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
 
-// ✅ Provider Component
+// Provider Component
 export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [activeOrders, setActiveOrders] = useState<Order[]>([]);
   const [orderHistory, setOrderHistory] = useState<Order[]>([]);
@@ -47,19 +49,41 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const completeOrder = (orderId: string) => {
     const completed = activeOrders.find((order) => order.id === orderId);
     if (completed) {
-      setOrderHistory((prev) => [...prev, { ...completed, status: "Delivered" }]);
+      setOrderHistory((prev) => [
+        ...prev,
+        { ...completed, status: "Delivered" }
+      ]);
       setActiveOrders((prev) => prev.filter((order) => order.id !== orderId));
     }
   };
 
+  // ⬇⬇ newly added method → clears entire order history
+  const clearOrderHistory = () => {
+    setOrderHistory([]);
+  };
+
+  // ⬇⬇ newly added method → removes one history item by ID
+  const removeOrderById = (orderId: string) => {
+    setOrderHistory((prev) => prev.filter((order) => order.id !== orderId));
+  };
+
   return (
-    <OrderContext.Provider value={{ activeOrders, orderHistory, placeOrder, completeOrder }}>
+    <OrderContext.Provider
+      value={{
+        activeOrders,
+        orderHistory,
+        placeOrder,
+        completeOrder,
+        clearOrderHistory,  // ⬅ added
+        removeOrderById     // ⬅ added
+      }}
+    >
       {children}
     </OrderContext.Provider>
   );
 };
 
-// ✅ Custom Hook for using the context
+// Custom Hook for using the context
 export const useOrders = (): OrderContextType => {
   const context = useContext(OrderContext);
   if (!context) {

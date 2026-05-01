@@ -17,6 +17,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useWishlist } from "../../context/WishlistContext"; 
 import { useCart } from "../../context/CartContext";
 
+
 const { width } = Dimensions.get("window");
 
 interface Brand {
@@ -493,6 +494,10 @@ const BrandScreen: React.FC = () => {
               <Image source={require("../../../assets/images/zaraextend.png")} style={styles.miniLogo} />
               <Image source={require("../../../assets/images/Pantaloonsextend.png")} style={styles.miniLogo} />
             </View>
+            <View style={[styles.brandFooter, isSelected && styles.brandFooterSelected]}>
+           
+            <Text style={styles.deliveryText}>All Brands</Text>
+          </View>
             <Text style={[styles.allBrandsTitle, isSelected && styles.allBrandsTitleSelected]}>All Brands</Text>
           </View>
         </TouchableOpacity>
@@ -522,10 +527,21 @@ const BrandScreen: React.FC = () => {
     );
   };
 
-  const renderProductItem = ({ item }: { item: Product }) => {
-    const isWishlisted = wishlistItems.some((p) => p.id === item.id);
+  const renderProductItem = ({ item, index }: { item: Product; index: number }) => {
+  const isWishlisted = wishlistItems.some((p) => p.id === item.id);
 
-    return (
+  return (
+    <TouchableOpacity
+      onPress={() =>
+        navigation.navigate("ProductDetailsScreen", {
+          product: item,
+          brandName: selectedBrand,
+          category:
+            topwearProducts.includes(item) ? "topwear" : "bottomwear",
+        })
+      }
+      activeOpacity={0.8}
+    >
       <View style={styles.productCard}>
         <View>
           <Image source={item.image} style={styles.productImage} resizeMode="cover" />
@@ -547,7 +563,11 @@ const BrandScreen: React.FC = () => {
                 })
               }
             >
-              <Ionicons name={isWishlisted ? "heart" : "heart-outline"} size={18} color={isWishlisted ? "red" : "white"} />
+              <Ionicons
+                name={isWishlisted ? "heart" : "heart-outline"}
+                size={18}
+                color={isWishlisted ? "red" : "white"}
+              />
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -556,9 +576,8 @@ const BrandScreen: React.FC = () => {
                 addToCart({
                   id: item.id,
                   name: item.title,
-                 
-                 price: item.price, // string
-  originalPrice: item.originalPrice,
+                  price: item.price,
+                  originalPrice: item.originalPrice,
                   image: item.image,
                   brandName: selectedBrand,
                 })
@@ -579,8 +598,9 @@ const BrandScreen: React.FC = () => {
           {item.discount && <Text style={styles.discount}>{item.discount}</Text>}
         </View>
       </View>
-    );
-  };
+    </TouchableOpacity>
+  );
+};
 
   return (
     <View style={styles.container}>
@@ -653,7 +673,14 @@ const BrandScreen: React.FC = () => {
         activeOpacity={0.85}
         onPress={() => navigation.navigate("CategoryScreen", { brandName: selectedBrand })}
       >
-        <Text style={styles.categoryText}>CATEGORY</Text>
+       <View style={styles.categoryContent}>
+  <Image
+    source={require("../../../assets/icons/Category Active-1.png")}
+    style={styles.categoryIcon}
+  />
+  <Text style={styles.categoryText}>CATEGORY</Text>
+</View>
+
       </TouchableOpacity>
     </View>
   );
@@ -711,35 +738,42 @@ type Styles = {
 const styles = StyleSheet.create<Styles>({
   container: { flex: 1, backgroundColor: "#f5f5f5" },
 
-  brandSelectorContainer: { paddingVertical: 10 },
+  brandSelectorContainer: { paddingVertical: 10 ,marginTop:35, },
 
-  brandCard: {
-    width: 100,
-    alignItems: "center",
-    marginHorizontal: 8,
-    padding: 10,
-    borderRadius: 12,
-    backgroundColor: "#fff",
-    marginTop: 20,
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
-    shadowOffset: { width: 0, height: 1 },
-  },
+ brandCard: {
+  width: 110,
+  height: 120,
+  backgroundColor: "#ffffff",
+  borderRadius: 12,
+  borderWidth: 1.4,
+  borderColor: "#f5d9c9",
+  marginRight: 12,
+  overflow: "hidden",
+  elevation: 3,
+  shadowColor: "#000",
+  shadowOpacity: 0.08,
+  shadowRadius: 4,
+  shadowOffset: { width: 0, height: 2 },
+  justifyContent: "center",
+  alignItems: "center",
+},
 
   selectedBrand: {
-    borderWidth: 2,
-    borderColor: "orange",
-  },
+  borderColor: "#ff7a00",
+  borderWidth: 2,
+},
 
-  brandLogo: {
-    width: 70,
-    height: 40,
-  },
+brandLogo: {
+  width: 70,
+  height: 40,
+  resizeMode: "contain",
+  marginTop: 28,
+  
+},
 
   brandLogoPlaceholder: {
     width: 70,
-    height: 40,
+    height: 20,
     borderRadius: 6,
     backgroundColor: "#eee",
     justifyContent: "center",
@@ -752,74 +786,85 @@ const styles = StyleSheet.create<Styles>({
     textAlign: "center",
   },
 
-  brandFooter: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 8,
-    backgroundColor: "#eed1d9ff",
-    width: 80,
-    height: 22,
-    justifyContent: "center",
-    borderBottomLeftRadius: 8,
-    borderBottomRightRadius: 8,
-  },
+ brandFooter: {
+  width: 120,
+  backgroundColor: "#fce8dc",   // peach footer
+  paddingVertical: 6,
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "center",
+  marginTop:28,
+  columnGap: 4,
+},
 
-  brandFooterSelected: {
-    backgroundColor: "#fecf8aff",
-  },
+brandFooterSelected: {
+  backgroundColor: "#ff7a00",   // orange footer
+},
 
-  clockIcon: {
-    width: 14,
-    height: 14,
-    marginRight: 6,
-  },
+clockIcon: {
+  width: 16,
+  height: 16,
+  tintColor: "#000",  // matches screenshot
+},
 
-  deliveryText: {
-    fontSize: 11,
-    color: "#363636ff",
-  },
+deliveryText: {
+  fontSize: 12,
+  color: "#000",
+  fontWeight: "500",
+},
 
   allBrandsCard: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    width: 100,
-    height: 96,
-    alignItems: "center",
-    marginHorizontal: 8,
-    padding: 6,
-    borderRadius: 12,
-    backgroundColor: "#fff",
-    marginTop: 20,
+    width: 110,
+  height: 120,
+  backgroundColor: "#ffffff",
+  borderRadius: 12,
+  borderWidth: 1.4,
+  borderColor: "#f5d9c9",
+  marginRight: 12,
+  overflow: "hidden",
+  elevation: 3,
+  shadowColor: "#000",
+  shadowOpacity: 0.08,
+  shadowRadius: 4,
+  shadowOffset: { width: 0, height: 2 },
+  justifyContent: "center",
+  alignItems: "center",
+  marginLeft:20,
+  
   },
 
   allBrandsLogoRow: {
     flexDirection: "row",
     justifyContent: "center",
     flexWrap: "wrap",
-    marginBottom: 6,
+   marginTop:58,
+   
   },
 
   miniLogo: {
-    width: 32,
+    width: 30,
     height: 32,
     resizeMode: "contain",
     marginHorizontal: 2,
+    
   },
 
   allBrandsTitle: {
-    fontSize: 12,
-    color: "#333",
-    textAlign: "center",
-    backgroundColor: "#eed1d9ff",
-    width: 80,
-    height: 20,
-    borderBottomLeftRadius: 8,
-    borderBottomRightRadius: 8,
-    lineHeight: 20,
+    width: 120,
+  backgroundColor: "#fce8dc",   // peach footer
+  paddingVertical: 6,
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "center",
+  marginBottom:20,
+  marginLeft:5,
+  columnGap: 4,
   },
 
   allBrandsTitleSelected: {
     backgroundColor: "#fecf8aff",
+   
+  
     color: "#fff",
   },
 
@@ -925,19 +970,33 @@ const styles = StyleSheet.create<Styles>({
 
   floatingCategoryBtn: {
     position: "absolute",
-    bottom: 8,
+    top:750,
     right: 20,
-    backgroundColor: "#ff7f00",
-    borderRadius: 30,
+    backgroundColor: "#fffffeff",
+    borderRadius: 10,
     paddingVertical: 12,
     paddingHorizontal: 22,
     elevation: 8,
     zIndex: 999,
   },
 
+  categoryContent: {
+  flexDirection: "row",
+  alignItems: "center",
+},
+
+categoryIcon: {
+  width: 16,
+  height: 18,
+  marginRight: 6,
+  tintColor: "#f9894eff", // optional: matches text color
+},
+
+
+
   categoryText: {
-    color: "#fff",
-    fontWeight: "700",
+    color: "#f9894eff",
+    fontWeight: "500",
     fontSize: 14,
   },
 

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -9,14 +9,16 @@ import {
   TouchableOpacity,
   FlatList,
   Platform,
+  Dimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { useWishlist } from "../../context/WishlistContext";
 import { useCart } from "../../context/CartContext";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { RootStackParamList } from "../types/navigation";
 import { StackNavigationProp } from "@react-navigation/stack";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // ===== Interfaces =====
 interface Brand {
@@ -28,16 +30,13 @@ interface Brand {
 
 interface Product {
   id: string;
-     image: any; 
+  image: any;
   brand: string;
   name: string;
   price: string;
   oldPrice: string;
   discount: string;
   gender: "M" | "F";
-  
-  
-
 }
 
 interface Offer {
@@ -45,8 +44,7 @@ interface Offer {
   banner: any;
 }
 
-
-const chunkArray = (arr, size) => {
+const chunkArray = (arr: any[], size: number) => {
   return Array.from({ length: Math.ceil(arr.length / size) }, (_, i) =>
     arr.slice(i * size, i * size + size)
   );
@@ -75,13 +73,53 @@ export default function HomeScreen() {
     city: "Kolkata",
     address: "52/2 Bidhanpally near Durga Mandir, Kolkata 700122",
   });
-  const handleScroll = (event) => {
-  const slide = Math.round(event.nativeEvent.contentOffset.x / 360);
-  setCurrentIndex(slide);
-};
 
+  // Responsive constants
+  const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
+  const isTablet = SCREEN_WIDTH >= 600;
 
-  type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, "HomeScreen">;
+  const BANNER_WIDTH = Math.round(SCREEN_WIDTH * 0.92);
+  const BANNER_HEIGHT = Math.round(SCREEN_HEIGHT * (isTablet ? 0.30 : 0.25));
+  const PRODUCT_CARD_WIDTH = Math.round(SCREEN_WIDTH * (isTablet ? 0.28 : 0.43)); // two on phone visible horizontally
+  const PRODUCT_CARD_HEIGHT = isTablet ? 350 : 290;
+  const OFFER_BANNER_WIDTH = Math.round(SCREEN_WIDTH * 0.9);
+  const OFFER_BANNER_HEIGHT = Math.round(SCREEN_HEIGHT * (isTablet ? 0.28 : 0.22));
+
+  const scaleFont = (size: number) => {
+    // simple scale function (keeps logic unchanged, only sizes)
+    return Math.round(isTablet ? size * 1.35 : size);
+  };
+
+  // 🔥 FIXED — parse JSON address properly
+  useFocusEffect(
+    useCallback(() => {
+      const fetchAddress = async () => {
+        const saved = await AsyncStorage.getItem("selectedAddress");
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved); // FIX
+            setLocation((prev) => ({
+              ...prev,
+              address: parsed.fullAddress ?? parsed.address ?? prev.address, // safer
+            }));
+          } catch (e) {
+            // if parsing fails, keep previous address (do not change logic)
+          }
+        }
+      };
+      fetchAddress();
+    }, [])
+  );
+
+  const handleScroll = (event: any) => {
+    const slide = Math.round(event.nativeEvent.contentOffset.x / BANNER_WIDTH);
+    setCurrentIndex(slide);
+  };
+
+  type HomeScreenNavigationProp = StackNavigationProp<
+    RootStackParamList,
+    "HomeScreen"
+  >;
   const navigation = useNavigation<HomeScreenNavigationProp>();
 
   const banners = [
@@ -90,19 +128,19 @@ export default function HomeScreen() {
     { image: require("../../../assets/images/Imagebanner.png") },
   ];
 
-  // Auto Scroll Effect
   React.useEffect(() => {
     const interval = setInterval(() => {
       setCurrentIndex((prevIndex) => {
         const nextIndex = (prevIndex + 1) % banners.length;
         scrollRef.current?.scrollTo({
-          x: nextIndex * 360,
+          x: nextIndex * BANNER_WIDTH,
           animated: true,
         });
         return nextIndex;
       });
     }, 3000);
     return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const products: Product[] = [
@@ -143,22 +181,226 @@ export default function HomeScreen() {
     { id: "2", banner: require("../../../assets/images/snitch.png") },
   ];
 
+  // dynamic styles using computed sizes
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: "#fff",
+      paddingTop: Platform.OS === "android" ? 25 : 0,
+    },
+    scrollContent: {
+      paddingBottom: 18,
+    },
+    locationIcon: { width: isTablet ? 24 : 20, height: isTablet ? 24 : 20, marginRight: 5 },
+    topBar: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingHorizontal: Math.round(SCREEN_WIDTH * 0.04),
+      paddingTop: 10,
+    },
+    locationContainer: { flex: 1 },
+    locationRow: { flexDirection: "row", alignItems: "center" },
+    locationLabel: { color: "#FF6600", fontWeight: "600", fontSize: scaleFont(13) },
+    locationText: { color: "#555", fontSize: scaleFont(13), width: Math.round(SCREEN_WIDTH * 0.55) },
+    cartIcon: { position: "relative" },
+    cartBadge: {
+      position: "absolute",
+      top: -6,
+      right: -8,
+      backgroundColor: "#FF6600",
+      borderRadius: 8,
+      paddingHorizontal: 5,
+      paddingVertical: 1,
+    },
+    cartCount: { color: "#fff", fontSize: scaleFont(10), fontWeight: "bold" },
+    searchRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: Math.round(SCREEN_WIDTH * 0.04),
+      marginVertical: isTablet ? 14 : 10,
+    },
+    searchContainer: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: "#F6F6F6",
+      borderRadius: 10,
+      paddingHorizontal: 12,
+      height: isTablet ? 50 : 40,
+      marginRight: 10,
+    },
+    searchInput: { flex: 1, color: "#000", fontSize: scaleFont(14) },
+    searchIconWrapper: { justifyContent: "center", alignItems: "center" },
+    searchIcon: { width: isTablet ? 22 : 18, height: isTablet ? 22 : 18, tintColor: "#888" },
+    genderToggleWrapper: {
+      flexDirection: "row",
+      backgroundColor: "#F0F0F0",
+      borderRadius: 20,
+      padding: 2,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    genderButton: {
+      width: isTablet ? 40 : 30,
+      height: isTablet ? 35 : 28,
+      borderRadius: isTablet ? 18 : 14,
+      alignItems: "center",
+      justifyContent: "center",
+      marginHorizontal: 2,
+    },
+    genderButtonActive: { backgroundColor: "#007bff" },
+    genderButtonText: { color: "#666", fontWeight: "600", fontSize: scaleFont(13) },
+    genderButtonTextActive: { color: "#fff", fontWeight: "700" },
+    bannerWrapper: { position: "relative", marginBottom: 15 },
+    bannerImage: {
+      width: BANNER_WIDTH,
+      height: BANNER_HEIGHT,
+      borderRadius: 10,
+      marginHorizontal: Math.round(SCREEN_WIDTH * 0.01),
+    },
+    dotContainer: {
+      flexDirection: "row",
+      justifyContent: "center",
+      alignItems: "center",
+      marginTop: 8,
+    },
+    dot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: "#FFD8B0",
+      marginHorizontal: 4,
+    },
+    activeDot: {
+      backgroundColor: "#FF6600",
+      width: 10,
+      height: 10,
+    },
+    brandContainer: {
+  flexDirection: "row",
+  flexWrap: "wrap",
+  justifyContent: "space-between",
+  marginTop: 10,
+  paddingHorizontal: Math.round(SCREEN_WIDTH * 0.03),
+},
+
+brandCard: {
+  width: "23.5%",   // 👈 ALWAYS 4 CARDS IN A ROW
+  aspectRatio: 1,   // 👈 Makes square cards & responsive
+  backgroundColor: "#fff",
+  borderRadius: 14,
+  borderWidth: 1,
+  borderColor: "#f6d9c9",
+  justifyContent: "center",
+  alignItems: "center",
+  marginBottom: 18,
+  overflow: "hidden",
+  elevation: 3,
+  shadowColor: "#000",
+  shadowOpacity: 0.1,
+  shadowRadius: 4,
+  shadowOffset: { width: 0, height: 2 },
+},
+
+brandLogo: {
+  width: "70%",
+  height: "125%",
+  resizeMode: "contain",
+  marginBottom: 10,
+},
+
+timeContainer: {
+  width: "100%",
+  backgroundColor: "#ffe9d9",
+  paddingVertical: 6,
+  flexDirection: "row",
+  justifyContent: "center",
+  alignItems: "center",
+  position: "absolute",
+  bottom: 0,
+},
+
+
+    brandTime: {
+      fontSize: scaleFont(12),
+      color: "#5a5a5a",
+      marginLeft: 4,
+    },
+
+    brandtext: { fontSize: scaleFont(18), fontWeight: "600", paddingHorizontal: Math.round(SCREEN_WIDTH * 0.04) },
+    sectionHeader: {
+      flexDirection: "column",
+      alignItems: "flex-start",
+      paddingHorizontal: Math.round(SCREEN_WIDTH * 0.04),
+      marginTop: 15,
+    },
+    sectionTitle: {
+      fontSize: scaleFont(17),
+      fontWeight: "500",
+      color: "#6c6c6cff",
+      marginTop:20,
+    },
+    productCard: {
+      width: PRODUCT_CARD_WIDTH,
+      height: PRODUCT_CARD_HEIGHT,
+      backgroundColor: "#fff",
+      borderRadius: 10,
+      marginRight: Math.round(SCREEN_WIDTH * 0.04),
+      marginTop: 15,
+      elevation: 3,
+      marginBottom: 12,
+    },
+    productImage: {
+      width: "100%",
+      height: isTablet ? 240 : 200,
+      borderRadius: 8,
+      marginBottom: 8,
+    },
+    productInfo: { padding: 8 },
+    productBrand: { color: "#fd6863ff", fontSize: scaleFont(12) },
+    productName: { color: "#7d7b7bff", fontSize: scaleFont(13), fontWeight: "500" },
+    priceRow: { flexDirection: "row", alignItems: "center" },
+    productPrice: { color: "#000", fontWeight: "bold", fontSize: scaleFont(14) },
+    oldPrice: {
+      color: "#777",
+      fontSize: scaleFont(12),
+      textDecorationLine: "line-through",
+    },
+    discount: { color: "#FF6600", fontSize: scaleFont(12), marginLeft: 8 },
+    iconColumn: { position: "absolute", top: 10, right: 10, alignItems: "center" },
+    wishlistIcon: { marginBottom: 10 },
+    cartAddIcon: { borderRadius: 20, padding: 5, elevation: 2 },
+    offerScroll: { paddingHorizontal: Math.round(SCREEN_WIDTH * 0.04), paddingBottom: 10 },
+    offerColumn: { marginRight: 10 },
+    offerBanner: {
+      width: OFFER_BANNER_WIDTH,
+      height: OFFER_BANNER_HEIGHT,
+      borderRadius: 20,
+    },
+  });
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent} // ✅ Updated
+        contentContainerStyle={styles.scrollContent}
       >
         {/* ===== Top Bar ===== */}
         <View style={styles.topBar}>
           <View style={styles.locationContainer}>
-            <View style={styles.locationRow}>
+            <TouchableOpacity
+              style={styles.locationRow}
+              onPress={() => navigation.navigate("LocationScreen")}
+            >
               <Image
                 source={require("../../../assets/icons/Location-1.png")}
                 style={styles.locationIcon}
               />
               <Text style={styles.locationLabel}>My Location</Text>
-            </View>
+            </TouchableOpacity>
+
             <Text style={styles.locationText} numberOfLines={1}>
               {location.address || "Fetching location..."}
             </Text>
@@ -168,7 +410,7 @@ export default function HomeScreen() {
             style={styles.cartIcon}
             onPress={() => navigation.navigate("CartScreen")}
           >
-            <Ionicons name="cart-outline" size={24} color="#000" />
+            <Ionicons name="cart-outline" size={isTablet ? 28 : 24} color="#000" />
             {cartItems.length > 0 && (
               <View style={styles.cartBadge}>
                 <Text style={styles.cartCount}>{cartItems.length}</Text>
@@ -177,7 +419,7 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* ===== Search Bar + Gender Section ===== */}
+        {/* ===== Search + Gender Selection ===== */}
         <View style={styles.searchRow}>
           <View style={styles.searchContainer}>
             <TextInput
@@ -193,81 +435,80 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
 
-          <View style={styles.genderToggleWrapper}>
-            <TouchableOpacity
-              style={[
-                styles.genderButton,
-                selectedGender === "M" && styles.genderButtonActive,
-              ]}
-              onPress={() => setSelectedGender("M")}
-            >
-              <Text
-                style={[
-                  styles.genderButtonText,
-                  selectedGender === "M" && styles.genderButtonTextActive,
-                ]}
-              >
-                M
-              </Text>
-            </TouchableOpacity>
+         <View style={styles.genderToggleWrapper}>
+  <TouchableOpacity
+    style={[
+      styles.genderButton,
+      selectedGender === "M" && { backgroundColor: "#007bff" },
+    ]}
+    onPress={() => setSelectedGender("M")}
+  >
+    <Text
+      style={[
+        styles.genderButtonText,
+        selectedGender === "M" && styles.genderButtonTextActive,
+      ]}
+    >
+      M
+    </Text>
+  </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[
-                styles.genderButton,
-                selectedGender === "F" && styles.genderButtonActive,
-              ]}
-              onPress={() => setSelectedGender("F")}
-            >
-              <Text
+  <TouchableOpacity
+    style={[
+      styles.genderButton,
+      selectedGender === "F" && { backgroundColor: "#FF69B4" },
+    ]}
+    onPress={() => setSelectedGender("F")}
+  >
+    <Text
+      style={[
+        styles.genderButtonText,
+        selectedGender === "F" && styles.genderButtonTextActive,
+      ]}
+    >
+      F
+    </Text>
+  </TouchableOpacity>
+</View>
+
+        </View>
+
+        {/* ===== Banner ===== */}
+        <View style={styles.bannerWrapper}>
+          <ScrollView
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            ref={scrollRef}
+            onScroll={handleScroll}
+            scrollEventThrottle={16}
+            contentContainerStyle={{ paddingHorizontal: Math.round((SCREEN_WIDTH - BANNER_WIDTH) / 2) }}
+          >
+            {banners.map((banner, index) => (
+              <Image
+                key={index}
+                source={banner.image}
+                style={styles.bannerImage}
+                resizeMode="cover"
+              />
+            ))}
+          </ScrollView>
+
+          <View style={styles.dotContainer}>
+            {banners.map((_, index) => (
+              <View
+                key={index}
                 style={[
-                  styles.genderButtonText,
-                  selectedGender === "F" && styles.genderButtonTextActive,
+                  styles.dot,
+                  currentIndex === index && styles.activeDot,
                 ]}
-              >
-                F
-              </Text>
-            </TouchableOpacity>
+              />
+            ))}
           </View>
         </View>
 
-        {/* ===== Banner Section ===== */}
-      {/* ===== Banner Section ===== */}
-<View style={styles.bannerWrapper}>
-  <ScrollView
-    horizontal
-    pagingEnabled
-    showsHorizontalScrollIndicator={false}
-    ref={scrollRef}
-    onScroll={handleScroll}
-    scrollEventThrottle={16}
-  >
-    {banners.map((banner, index) => (
-      <Image
-        key={index}
-        source={banner.image}
-        style={styles.bannerImage}
-        resizeMode="cover"
-      />
-    ))}
-  </ScrollView>
-
-  {/* ===== Indicator Dots ===== */}
-  <View style={styles.dotContainer}>
-    {banners.map((_, index) => (
-      <View
-        key={index}
-        style={[
-          styles.dot,
-          currentIndex === index && styles.activeDot, // highlight active dot
-        ]}
-      />
-    ))}
-  </View>
-</View>
-
-
-        {/* ===== Brand Section ===== */}
-        <Text style={styles.brandtext}>Select Your Store </Text>
+        {/* ===== Brands ===== */}
+        <Text style={styles.brandtext}>Select Your Store</Text>
         <View style={styles.brandContainer}>
           {brands.map((brand) => (
             <TouchableOpacity
@@ -292,7 +533,7 @@ export default function HomeScreen() {
           ))}
         </View>
 
-        {/* ===== Recommended Products ===== */}
+        {/* ===== Products ===== */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Recommended For You</Text>
         </View>
@@ -302,7 +543,7 @@ export default function HomeScreen() {
           horizontal
           showsHorizontalScrollIndicator={false}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingHorizontal: 15 }}
+          contentContainerStyle={{ paddingHorizontal: Math.round(SCREEN_WIDTH * 0.04) }}
           renderItem={({ item }) => {
             const isFavourite = wishlistItems.some((p) => p.id === item.id);
             return (
@@ -336,7 +577,7 @@ export default function HomeScreen() {
                   >
                     <Ionicons
                       name={isFavourite ? "heart" : "heart-outline"}
-                      size={20}
+                      size={isTablet ? 22 : 20}
                       color={isFavourite ? "red" : "#f9f5f5ff"}
                     />
                   </TouchableOpacity>
@@ -344,7 +585,7 @@ export default function HomeScreen() {
                     style={styles.cartAddIcon}
                     onPress={() => addToCart(item)}
                   >
-                    <Ionicons name="cart-outline" size={20} color="#f9f5f2ff" />
+                    <Ionicons name="cart-outline" size={isTablet ? 22 : 20} color="#f9f5f2ff" />
                   </TouchableOpacity>
                 </View>
               </TouchableOpacity>
@@ -352,7 +593,7 @@ export default function HomeScreen() {
           }}
         />
 
-        {/* ===== Featured Brand’s Offers ===== */}
+        {/* ===== Offers ===== */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Featured Brand’s Offers</Text>
         </View>
@@ -379,170 +620,3 @@ export default function HomeScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-    paddingTop: Platform.OS === "android" ? 25 : 0,
-  },
-  scrollContent: {
-    paddingBottom: 18, // ✅ Reduced from 60 to remove extra white
-  },
-  dotContainer: {
-  flexDirection: "row",
-  justifyContent: "center",
-  alignItems: "center",
-  marginTop: 8,
-},
-dot: {
-  width: 8,
-  height: 8,
-  borderRadius: 4,
-  backgroundColor: "#FFD8B0", // light orange inactive
-  marginHorizontal: 4,
-},
-activeDot: {
-  backgroundColor: "#FF6600", // active orange
-  width: 10,
-  height: 10,
-},
-
-  locationIcon: { width: 20, height: 20, marginRight: 5 },
-  topBar: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 15,
-    paddingTop: 10,
-  },
-  locationContainer: { flex: 1 },
-  locationRow: { flexDirection: "row", alignItems: "center" },
-  locationLabel: { color: "#FF6600", fontWeight: "600", fontSize: 13 },
-  locationText: { color: "#555", fontSize: 13, width: 240 },
-  cartIcon: { position: "relative" },
-  cartBadge: {
-    position: "absolute",
-    top: -6,
-    right: -8,
-    backgroundColor: "#FF6600",
-    borderRadius: 8,
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-  },
-  cartCount: { color: "#fff", fontSize: 10, fontWeight: "bold" },
-  searchRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 15,
-    marginVertical: 10,
-  },
-  searchContainer: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#F6F6F6",
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    height: 40,
-    marginRight: 10,
-  },
-  searchInput: { flex: 1, color: "#000", fontSize: 14 },
-  searchIconWrapper: { justifyContent: "center", alignItems: "center" },
-  searchIcon: { width: 18, height: 18, tintColor: "#888" },
-  genderToggleWrapper: {
-    flexDirection: "row",
-    backgroundColor: "#F0F0F0",
-    borderRadius: 20,
-    padding: 2,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  genderButton: {
-    width: 30,
-    height: 28,
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
-    marginHorizontal: 2,
-  },
-  genderButtonActive: { backgroundColor: "#007bff" },
-  genderButtonText: { color: "#666", fontWeight: "600", fontSize: 13 },
-  genderButtonTextActive: { color: "#fff", fontWeight: "700" },
-  bannerWrapper: { position: "relative", marginBottom: 15 },
-  bannerImage: { width: 360, height: 200, borderRadius: 10, marginHorizontal: 2 },
-  brandContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    marginTop: 10,
-    paddingHorizontal: 10,
-  },
-  brandCard: {
-    width: "22%",
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#fee3f1ff",
-    borderRadius: 12,
-    alignItems: "center",
-    marginBottom: 15,
-    paddingVertical: 12,
-    elevation: 2,
-  },
-  brandLogo: { width: 50, height: 50 },
-  timeContainer: {
-    backgroundColor: "#ffe4ec",
-    paddingHorizontal: 5,
-    paddingVertical: 4,
-    borderRadius: 8,
-    marginTop: 7,
-  },
-  brandTime: { fontSize: 12, color: "#7A7A7A" },
-  brandtext: { fontSize: 18, fontWeight: "600", paddingHorizontal: 15 },
-  sectionHeader: {
-    flexDirection: "column",
-    alignItems: "flex-start",
-    paddingHorizontal: 15,
-    marginTop: 15,
-  },
-  sectionTitle: {
-    fontSize: 17,
-    fontWeight: "500",
-    color: "#6c6c6cff",
-  },
-  productCard: {
-    width: 170,
-    height: 290,
-    backgroundColor: "#fff",
-    borderRadius: 10,
-    marginRight: 15,
-    marginTop: 15,
-    elevation: 3,
-    marginBottom:12,
-  },
-  productImage: { width: 170, height: 200, borderRadius: 8, marginBottom: 8 },
-  productInfo: { padding: 8 },
-  productBrand: { color: "#fd6863ff", fontSize: 12 },
-  productName: { color: "#7d7b7bff", fontSize: 13, fontWeight: "500" },
-  priceRow: { flexDirection: "row", alignItems: "center" },
-  productPrice: { color: "#000", fontWeight: "bold" },
-  oldPrice: {
-    color: "#777",
-    fontSize: 12,
-    textDecorationLine: "line-through",
-  },
-  discount: { color: "#FF6600", fontSize: 12, marginLeft: 8 },
-  iconColumn: { position: "absolute", top: 10, right: 10, alignItems: "center" },
-  wishlistIcon: { marginBottom: 10 },
-  cartAddIcon: { borderRadius: 20, padding: 5, elevation: 2 },
-  offerScroll: { paddingHorizontal: 15, paddingBottom: 10 }, // ✅ Reduced paddingBottom
-  offerColumn: { marginRight: 10 },
-  offerBanner: {
-    width: 350,
-    height: 180,
-    borderRadius: 20,
-    
-  },
-});
-

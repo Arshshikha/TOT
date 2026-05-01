@@ -44,36 +44,24 @@ const redirectTo = route.params?.redirectTo || "MainTabs";
     }
   };
 
-  // ✅ Handle login action
-  const handleContinue = () => {
+// ✅ Handle login action (Send OTP → Navigate to OTP Screen)
+const handleContinue = () => {
   if (phone.length === 10) {
-    const userData = {
-      name: "Arshshikha",
-      phone: `+91 ${phone}`,
-      profileImage: require("../../../assets/images/profile.png"),
-    };
 
-    // ✅ Save user data in context
-    login(userData);
+    // 🔥 Generate fake OTP (only for testing)
+    const fakeOtp = "1234";
 
-    // ✅ Navigate to Account tab after successful login
-    navigation.dispatch(
-      CommonActions.reset({
-        index: 0,
-        routes: [
-          {
-            name: "MainTabs",
-            state: {
-              routes: [{ name: "MyAccount" }],
-            },
-          },
-        ],
-      })
-    );
+    navigation.navigate("OtpScreen", { 
+      phone,
+      otp: fakeOtp   // pass otp for testing
+    });
   } else {
     alert("Please enter a valid 10-digit phone number.");
   }
 };
+
+
+
 
   const keypad = [
     ["1", "2", "3"],
