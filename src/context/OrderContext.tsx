@@ -1,5 +1,23 @@
 import React, { createContext, useState, useContext, ReactNode } from "react";
 
+// Types used by OrderHistoryScreen
+export interface ProductItem {
+  id: string;
+  name: string;
+  price: number;
+  image: any;
+  productImage: any;
+}
+
+export interface OrderItem {
+  id: string;
+  amount: number;
+  date: string;
+  time: string;
+  deliveredIn: number;
+  products: ProductItem[];
+}
+
 // Define the shape of one order
 export interface Order {
   id: string;

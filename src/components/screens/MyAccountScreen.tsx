@@ -27,7 +27,7 @@ export default function MyAccountScreen({ navigation }) {
 
   
   const handleLogout = () => {
-    if (user && user?.name) {
+    if (user && user?.firstName) {
       
       Alert.alert("Logout", "Are you sure you want to log out?", [
         { text: "Cancel", style: "cancel" },
@@ -59,7 +59,8 @@ export default function MyAccountScreen({ navigation }) {
   };
 
   
-  const settingsItems = [
+  type MenuItem = { id: string; label: string; icon: any; screen?: string };
+  const settingsItems: MenuItem[] = [
    
     {
       id: "1",
@@ -75,7 +76,7 @@ export default function MyAccountScreen({ navigation }) {
     },
   ];
 
-  const activitiesItems = [
+  const activitiesItems: MenuItem[] = [
     {
       id: "1",
       label: "Active Orders",
@@ -94,7 +95,7 @@ export default function MyAccountScreen({ navigation }) {
     },
   ];
 
-  const supplierItems = [
+  const supplierItems: MenuItem[] = [
     {
       id: "1",
       label: "Become a Vendor",
@@ -109,7 +110,7 @@ export default function MyAccountScreen({ navigation }) {
     },
   ];
 
-  const supportItems = [
+  const supportItems: MenuItem[] = [
     {
     id: "0",
     label: "Help & Support",
@@ -137,7 +138,7 @@ export default function MyAccountScreen({ navigation }) {
 
   ];
 
-  const legalItems = [
+  const legalItems: MenuItem[] = [
     {
       id: "1",
       label: "Privacy Policy",
@@ -169,7 +170,7 @@ export default function MyAccountScreen({ navigation }) {
         <TouchableOpacity
           style={styles.cartIconWrapper}
           onPress={() => {
-            if (!user?.name) {
+            if (!user?.firstName) {
               Alert.alert("Login Required", "Please log in to view your cart.", [
                 {
                   text: "OK",
@@ -204,21 +205,21 @@ export default function MyAccountScreen({ navigation }) {
         <View style={styles.profileCard}>
           <Image
             source={
-              user?.image
-                ? { uri: user.image }
+              user?.avatarUrl
+                ? { uri: user?.avatarUrl }
                 : require("../../../assets/images/profile.png")
             }
             style={styles.profileImage}
           />
           <View style={{ flex: 1, marginLeft: 12 }}>
-            <Text style={styles.userName}>Hi {user?.name || "Guest"}</Text>
+            <Text style={styles.userName}>Hi {user?.firstName || "Guest"}</Text>
             <Text style={styles.userPhone}>
               {user?.phone || "+00 0000000000"}
             </Text>
           </View>
           <TouchableOpacity
             onPress={() => {
-              if (!user?.name) {
+              if (!user?.firstName) {
                 Alert.alert("Login Required", "Please log in first.", [
                   {
                     text: "OK",
@@ -291,7 +292,7 @@ export default function MyAccountScreen({ navigation }) {
               key={item.id}
               style={styles.row}
               onPress={() => {
-                if (!user?.name) {
+                if (!user?.firstName) {
                   Alert.alert("Login Required", "Please log in first.", [
                     {
                       text: "OK",
@@ -376,7 +377,7 @@ export default function MyAccountScreen({ navigation }) {
                         key={item.id}
                         style={styles.row}
                         onPress={() => {
-                          if (!user?.name) {
+                          if (!user?.firstName) {
                             Alert.alert(
                               "Login Required",
                               "Please log in first.",
@@ -425,7 +426,7 @@ export default function MyAccountScreen({ navigation }) {
                         key={item.id}
                         style={styles.row}
                         onPress={() => {
-                          if (!user?.name) {
+                          if (!user?.firstName) {
                             Alert.alert(
                               "Login Required",
                               "Please log in first.",

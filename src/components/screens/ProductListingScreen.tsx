@@ -8,11 +8,14 @@ import {
   TextInput,
   Dimensions,
   Text,
+  ActivityIndicator,
 } from "react-native";
 import { useWishlist } from "../../context/WishlistContext";
-import { useCart } from "../../context/CartContext"; // ✅ Add this line
+import { useCart } from "../../context/CartContext";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import Ionicons from "react-native-vector-icons/Ionicons";
+import { useProducts } from "../../hooks/useProducts";
+import { formatCents } from "../../utils/currency";
 
 const { width } = Dimensions.get("window");
 const cardWidth = (width - 40) / 2; // 2-column layout
@@ -341,7 +344,28 @@ products = products.filter((p) =>
   p.name.toLowerCase().includes(searchQuery.toLowerCase())
 );
 
-const [filteredProducts, setFilteredProducts] = useState(products || []);
+// ── API products (real data when available) ─────────────────────────
+const { data: apiData, isLoading: apiLoading } = useProducts({
+  search: brandName || undefined,
+  limit: 50,
+});
+
+const apiProducts = apiData?.data.map((p) => ({
+  id: String(p.id),
+  name: p.name,
+  price: formatCents(p.priceInCents, p.currency),
+  originalPrice: "",
+  discount: "",
+  image: p.images.primary
+    ? { uri: p.images.primary }
+    : require("../../../assets/images/Topwear1.png"),
+  brandName,
+})) ?? [];
+
+// Prefer API products over static if any returned
+const finalProducts = apiProducts.length > 0 ? apiProducts : products;
+
+const [filteredProducts, setFilteredProducts] = useState(finalProducts);
 
 
 
@@ -513,12 +537,12 @@ const renderProductCard = ({ item }: any) => {
   </View>
 </View>
 
+      {apiLoading ? (
+        <ActivityIndicator size="large" color="#FF6600" style={{ marginTop: 40 }} />
+      ) : (
       <FlatList
-       
-  data={filteredProducts && filteredProducts.length > 0 ? filteredProducts : products || []}
-
-
-        keyExtractor={(item) => item.id}
+        data={filteredProducts.length > 0 ? filteredProducts : finalProducts}
+        keyExtractor={(item) => String(item.id)}
         numColumns={2}
         columnWrapperStyle={{
           justifyContent: "space-between",
@@ -532,6 +556,7 @@ const renderProductCard = ({ item }: any) => {
           </Text>
         }
       />
+      )}
     </View>
   );
 };

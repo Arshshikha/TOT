@@ -1,87 +1,154 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from "react-native";
-import { useNavigation, useRoute, CommonActions } from "@react-navigation/native";
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  ActivityIndicator,
+} from 'react-native';
+import { useNavigation, useRoute, CommonActions } from '@react-navigation/native';
+import { useLoginVerify, useRegisterComplete, useRegisterRequestOtp } from '../../hooks/useAuth';
+import { useUser } from '../../context/UserContext';
+
+type RouteParams = {
+  phone: string;
+  mode: 'login' | 'register';
+};
 
 export default function OtpScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const route = useRoute();
-  const { phone } = route.params as { phone: string };
+  const { phone, mode } = route.params as RouteParams;
 
-  const [otp, setOtp] = useState("");
-  const [generatedOtp, setGeneratedOtp] = useState("");
+  const [otp, setOtp] = useState('');
+  const [email, setEmail] = useState('');
+  const [firstName, setFirstName] = useState('');
 
-  // 🔥 Generate REAL OTP on mount (no dummy, no backend needed)
-  useEffect(() => {
-    const realOtp = Math.floor(1000 + Math.random() * 9000).toString(); // 4-digit OTP
-    setGeneratedOtp(realOtp);
-    console.log("Generated OTP:", realOtp); // For debugging
-  }, []);
+  const { setAuthUser } = useUser();
+  const loginVerify = useLoginVerify();
+  const registerComplete = useRegisterComplete();
+  const registerRequestOtp = useRegisterRequestOtp();
 
-  const handleVerifyOtp = () => {
-    if (otp === generatedOtp) {
-      Alert.alert("Success", "OTP Verified Successfully");
+  const isRegister = mode === 'register';
+  const isPending = loginVerify.isPending || registerComplete.isPending;
 
-      navigation.dispatch(
-        CommonActions.reset({
-          index: 0,
-          routes: [
-            {
-              name: "MainTabs",
-              state: {
-                routes: [{ name: "MyAccount" }],
-              },
-            },
-          ],
-        })
-      );
-    } else {
-      Alert.alert("Error", "Invalid OTP. Please enter the correct 4-digit OTP");
+  const navigateToApp = () => {
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{ name: 'MainTabs', state: { routes: [{ name: 'MyAccount' }] } }],
+      })
+    );
+  };
+
+  const handleVerify = async () => {
+    if (otp.length < 4) {
+      Alert.alert('Invalid OTP', 'Please enter the OTP sent to your phone.');
+      return;
+    }
+
+    try {
+      if (isRegister) {
+        if (!email) {
+          Alert.alert('Required', 'Please enter your email to complete registration.');
+          return;
+        }
+        const res = await registerComplete.mutateAsync({ phone, otp, email, firstName });
+        await setAuthUser(res.data.user);
+      } else {
+        const res = await loginVerify.mutateAsync({ phone, otp });
+        await setAuthUser(res.data.user);
+      }
+      navigateToApp();
+    } catch (err: any) {
+      Alert.alert('Error', err?.message ?? 'Verification failed. Please try again.');
+    }
+  };
+
+  const handleResend = async () => {
+    try {
+      if (isRegister) {
+        await registerRequestOtp.mutateAsync({ phone });
+      } else {
+        // re-use the login OTP request — navigate back to let LoginScreen call it
+        navigation.goBack();
+      }
+      Alert.alert('Sent', 'A new OTP has been sent to your phone.');
+    } catch (err: any) {
+      Alert.alert('Error', err?.message ?? 'Failed to resend OTP.');
     }
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Enter OTP</Text>
-      <Text style={styles.subtitle}>OTP sent to +91 {phone}</Text>
-
-      {/* 🔥 Display auto-generated OTP for testing */}
-      <Text style={styles.testOtpText}>Test OTP: {generatedOtp}</Text>
+      <Text style={styles.subtitle}>OTP sent to {phone}</Text>
 
       <TextInput
         style={styles.input}
         value={otp}
         onChangeText={setOtp}
         keyboardType="number-pad"
-        placeholder="Enter 4-digit OTP"
-        maxLength={4}
+        placeholder="Enter OTP"
+        maxLength={6}
       />
 
-      <TouchableOpacity style={styles.button} onPress={handleVerifyOtp}>
-        <Text style={styles.buttonText}>VERIFY OTP</Text>
+      {isRegister && (
+        <>
+          <TextInput
+            style={styles.input}
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            placeholder="Email address *"
+          />
+          <TextInput
+            style={styles.input}
+            value={firstName}
+            onChangeText={setFirstName}
+            placeholder="First name (optional)"
+          />
+        </>
+      )}
+
+      <TouchableOpacity style={styles.button} onPress={handleVerify} disabled={isPending}>
+        {isPending ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={styles.buttonText}>VERIFY OTP</Text>
+        )}
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.resendButton} onPress={handleResend}>
+        <Text style={styles.resendText}>Resend OTP</Text>
       </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, justifyContent: "center", backgroundColor: "#fff" },
-  title: { fontSize: 28, fontWeight: "bold", textAlign: "center", marginBottom: 10 },
-  subtitle: { textAlign: "center", marginBottom: 20, fontSize: 16 },
-  testOtpText: { textAlign: "center", marginBottom: 20, color: "red", fontWeight: "bold" },
+  container: { flex: 1, padding: 20, justifyContent: 'center', backgroundColor: '#fff' },
+  title: { fontSize: 28, fontWeight: 'bold', textAlign: 'center', marginBottom: 10 },
+  subtitle: { textAlign: 'center', marginBottom: 20, fontSize: 16, color: '#555' },
   input: {
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: '#ccc',
     padding: 15,
     borderRadius: 10,
-    fontSize: 18,
-    marginBottom: 20,
-    textAlign: "center",
+    fontSize: 16,
+    marginBottom: 14,
   },
   button: {
-    backgroundColor: "#FF6600",
+    backgroundColor: '#FF6600',
     padding: 15,
     borderRadius: 10,
-    alignItems: "center",
+    alignItems: 'center',
+    marginBottom: 12,
   },
-  buttonText: { color: "#fff", fontSize: 18, fontWeight: "bold" },
+  buttonText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
+  resendButton: { alignItems: 'center', padding: 10 },
+  resendText: { color: '#FF6600', fontSize: 15 },
 });

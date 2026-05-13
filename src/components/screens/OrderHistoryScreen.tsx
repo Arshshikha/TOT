@@ -17,19 +17,27 @@ import {
   SafeAreaView,
   Modal,
   Pressable,
+  ActivityIndicator,
 } from "react-native";
 import Ionicons from "react-native-vector-icons/Ionicons";
-import { useOrders, OrderItem, ProductItem } from "../../context/OrderContext";
+import { useOrders as useLocalOrders, OrderItem, ProductItem } from "../../context/OrderContext";
 import { useCart } from "../../context/CartContext";
 import { useNavigation } from "@react-navigation/native";
+import { useOrders } from "../../hooks/useOrders";
+import { useUser } from "../../context/UserContext";
+import { formatCents } from "../../utils/currency";
 
 const { width } = Dimensions.get("window");
 const ORANGE = "#FF6600";
 
 export default function OrderHistoryScreen() {
   const navigation = useNavigation<any>();
-  const { orderHistory, clearOrderHistory, removeOrderById } = useOrders();
+  const { orderHistory, clearOrderHistory, removeOrderById } = useLocalOrders();
   const { addToCart, addMultipleToCart } = useCart() as any;
+  const { user } = useUser();
+  const { data: apiOrders, isLoading: apiLoading } = useOrders(
+    user ? { userId: user.id, limit: 50 } : undefined
+  );
 
   const [menuOrderId, setMenuOrderId] = useState<string | null>(null);
   const [menuVisible, setMenuVisible] = useState(false);
@@ -130,7 +138,30 @@ export default function OrderHistoryScreen() {
     },
   ];
 
-  const listData = orderHistory.length === 0 ? dummyOrders : orderHistory;
+  // Prefer real API orders when available; fall back to local context then dummy data
+  const apiOrderItems: OrderItem[] =
+    apiOrders?.data.map((o) => ({
+      id: String(o.id),
+      amount: Math.round(o.totalInCents / 100),
+      date: new Date(o.createdAt).toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      }),
+      time: new Date(o.createdAt).toLocaleTimeString('en-IN', {
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
+      deliveredIn: 35,
+      products: [],
+    })) ?? [];
+
+  const listData: OrderItem[] =
+    apiOrderItems.length > 0
+      ? apiOrderItems
+      : orderHistory.length > 0
+      ? (orderHistory as unknown as OrderItem[])
+      : dummyOrders;
   const isEmpty = listData.length === 0;
 
   // ------------------------ UI Components
@@ -188,7 +219,11 @@ export default function OrderHistoryScreen() {
       </View>
 
       {/* 🧾 Order List */}
-      {isEmpty ? (
+      {apiLoading ? (
+        <View style={styles.emptyContainer}>
+          <ActivityIndicator size="large" color={ORANGE} />
+        </View>
+      ) : isEmpty ? (
         <View style={styles.emptyContainer}>
           <Ionicons name="time-outline" size={52} color={ORANGE} />
           <Text style={styles.emptyText}>No previous orders found</Text>
@@ -201,7 +236,7 @@ export default function OrderHistoryScreen() {
           renderItem={renderOrder}
           ItemSeparatorComponent={() => <View style={{ height: 16 }} />}
         />
-      )}
+      ) }
 
       {/* ⛔ Bottom Menu (delete confirmation) */}
       <Modal visible={menuVisible} transparent animationType="fade" onRequestClose={closeMenu}>

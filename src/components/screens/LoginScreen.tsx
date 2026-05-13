@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -7,79 +7,72 @@ import {
   TextInput,
   TouchableOpacity,
   Platform,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { StackNavigationProp } from "@react-navigation/stack";
+  Alert,
+  ActivityIndicator,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { StackNavigationProp } from '@react-navigation/stack';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import { useNavigation } from '@react-navigation/native';
+import { useLoginRequestOtp } from '../../hooks/useAuth';
 
-import Ionicons from "react-native-vector-icons/Ionicons";
-import { useNavigation, useRoute, CommonActions } from "@react-navigation/native";
-import { useUser } from "../../context/UserContext";
 type RootStackParamList = {
   LoginScreen: { redirectTo?: string } | undefined;
+  OtpScreen: { phone: string; mode: 'login' | 'register' };
   MainTabs: { screen?: string } | undefined;
-  MyAccount: undefined;
 };
 
-type LoginScreenNavigationProp = StackNavigationProp<RootStackParamList, "LoginScreen">;
-
+type LoginScreenNavigationProp = StackNavigationProp<RootStackParamList, 'LoginScreen'>;
 
 export default function LoginScreen() {
-  const [phone, setPhone] = useState("");
- const navigation = useNavigation<LoginScreenNavigationProp>();
+  const [phone, setPhone] = useState('');
+  const navigation = useNavigation<LoginScreenNavigationProp>();
+  const requestOtp = useLoginRequestOtp();
 
- 
-  const { login } = useUser(); // ✅ use updated login from context
-  const route = useRoute() as { params?: { redirectTo?: string } };
-const redirectTo = route.params?.redirectTo || "MainTabs";
-
-
-  
-
-  // ✅ Handle keypad input
   const handleNumberPress = (num: string) => {
-    if (num === "⌫") {
-      setPhone(phone.slice(0, -1));
+    if (num === '⌫') {
+      setPhone((p) => p.slice(0, -1));
     } else if (/^\d$/.test(num)) {
-      if (phone.length < 10) setPhone(phone + num);
+      if (phone.length < 10) setPhone((p) => p + num);
     }
   };
 
-// ✅ Handle login action (Send OTP → Navigate to OTP Screen)
-const handleContinue = () => {
-  if (phone.length === 10) {
-
-    // 🔥 Generate fake OTP (only for testing)
-    const fakeOtp = "1234";
-
-    navigation.navigate("OtpScreen", { 
-      phone,
-      otp: fakeOtp   // pass otp for testing
-    });
-  } else {
-    alert("Please enter a valid 10-digit phone number.");
-  }
-};
-
-
-
+  const handleContinue = async () => {
+    if (phone.length !== 10) {
+      Alert.alert('Invalid number', 'Please enter a valid 10-digit phone number.');
+      return;
+    }
+    const fullPhone = `+91${phone}`;
+    try {
+      await requestOtp.mutateAsync({ phone: fullPhone });
+      navigation.navigate('OtpScreen', { phone: fullPhone, mode: 'login' });
+    } catch (err: any) {
+      if (err?.status === 404 || err?.status === 422) {
+        // Phone not registered — switch to register flow
+        navigation.navigate('OtpScreen', { phone: fullPhone, mode: 'register' });
+      } else {
+        Alert.alert('Error', err?.message ?? 'Failed to send OTP. Please try again.');
+      }
+    }
+  };
 
   const keypad = [
-    ["1", "2", "3"],
-    ["4", "5", "6"],
-    ["7", "8", "9"],
-    ["#", "0", "⌫"],
+    ['1', '2', '3'],
+    ['4', '5', '6'],
+    ['7', '8', '9'],
+    ['#', '0', '⌫'],
   ];
 
   return (
-    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <ImageBackground
-        source={require("../../../assets/images/Maskgroup.png")}
+        source={require('../../../assets/images/Maskgroup.png')}
         style={styles.topSection}
         resizeMode="cover"
       >
         <TouchableOpacity
           style={styles.skipButton}
-          onPress={() => navigation.replace("MainTabs", { screen: "Home" })}
+          onPress={() => navigation.replace('MainTabs', { screen: 'Home' })}
         >
           <Text style={styles.skipText}>Skip →</Text>
         </TouchableOpacity>
@@ -93,9 +86,7 @@ const handleContinue = () => {
 
       <View style={styles.loginCard}>
         <Text style={styles.loginTitle}>LOGIN</Text>
-        <Text style={styles.loginSubtitle}>
-          Enter your phone number to continue
-        </Text>
+        <Text style={styles.loginSubtitle}>Enter your phone number to continue</Text>
 
         <View style={styles.inputWrapper}>
           <View style={styles.inputContainer}>
@@ -112,8 +103,16 @@ const handleContinue = () => {
           </View>
         </View>
 
-        <TouchableOpacity style={styles.continueButton} onPress={handleContinue}>
-          <Text style={styles.continueText}>CONTINUE</Text>
+        <TouchableOpacity
+          style={[styles.continueButton, requestOtp.isPending && styles.continueButtonDisabled]}
+          onPress={handleContinue}
+          disabled={requestOtp.isPending}
+        >
+          {requestOtp.isPending ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.continueText}>CONTINUE</Text>
+          )}
         </TouchableOpacity>
 
         <View style={styles.keypadContainer}>
@@ -124,11 +123,11 @@ const handleContinue = () => {
                   key={key}
                   style={[
                     styles.keyButton,
-                    (key === "#" || key === "⌫") && styles.specialKeyButton,
+                    (key === '#' || key === '⌫') && styles.specialKeyButton,
                   ]}
                   onPress={() => handleNumberPress(key)}
                 >
-                  {key === "⌫" ? (
+                  {key === '⌫' ? (
                     <Ionicons name="backspace-outline" size={22} color="#1a1a1a" />
                   ) : (
                     <Text style={styles.keyText}>{key}</Text>
@@ -143,30 +142,29 @@ const handleContinue = () => {
   );
 }
 
-// ===== Styles =====
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
+  container: { flex: 1, backgroundColor: '#fff' },
   topSection: {
     flex: 3,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingTop: Platform.OS === "android" ? 20 : 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: Platform.OS === 'android' ? 20 : 0,
   },
-  skipButton: { position: "absolute", top: 20, right: 20 },
-  skipText: { color: "#fff", fontSize: 16 },
-  logoContainer: { alignItems: "center" },
+  skipButton: { position: 'absolute', top: 20, right: 20 },
+  skipText: { color: '#fff', fontSize: 16 },
+  logoContainer: { alignItems: 'center' },
   logo: {
-    backgroundColor: "#FF6600",
+    backgroundColor: '#FF6600',
     width: 80,
     height: 80,
     borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  logoText: { color: "#fff", fontWeight: "bold", fontSize: 24 },
+  logoText: { color: '#fff', fontWeight: 'bold', fontSize: 24 },
   loginCard: {
     flex: 5,
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
     borderTopLeftRadius: 25,
     borderTopRightRadius: 25,
     padding: 25,
@@ -174,59 +172,55 @@ const styles = StyleSheet.create({
   },
   loginTitle: {
     fontSize: 24,
-    fontWeight: "bold",
-    color: "#000",
-    textAlign: "center",
+    fontWeight: 'bold',
+    color: '#000',
+    textAlign: 'center',
   },
-  loginSubtitle: {
-    fontSize: 14,
-    textAlign: "center",
-    marginBottom: 25,
-  },
+  loginSubtitle: { fontSize: 14, textAlign: 'center', marginBottom: 25 },
   inputWrapper: { marginBottom: 20 },
   inputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#fff",
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: "#E0E0E0",
+    borderColor: '#E0E0E0',
     borderRadius: 12,
     paddingHorizontal: 10,
     paddingVertical: 10,
     elevation: 2,
   },
-  countryCode: { fontSize: 16, color: "#000" },
-  phoneInput: { flex: 1, fontSize: 16, color: "#000" },
+  countryCode: { fontSize: 16, color: '#000' },
+  phoneInput: { flex: 1, fontSize: 16, color: '#000' },
   continueButton: {
-    backgroundColor: "#FF6600",
+    backgroundColor: '#FF6600',
     paddingVertical: 15,
     borderRadius: 10,
-    alignItems: "center",
+    alignItems: 'center',
     marginBottom: 15,
   },
-  continueText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
+  continueButtonDisabled: { opacity: 0.7 },
+  continueText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
   keypadContainer: {
     marginTop: 10,
-    alignItems: "center",
-    backgroundColor: "#fff",
+    alignItems: 'center',
+    backgroundColor: '#fff',
     paddingBottom: 20,
   },
   keyRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     marginBottom: 12,
-    width: "90%",
+    width: '90%',
   },
   keyButton: {
-    backgroundColor: "#FFE1D1",
+    backgroundColor: '#FFE1D1',
     borderRadius: 12,
     flex: 1,
     marginHorizontal: 6,
     height: 45,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  keyText: { fontSize: 22, color: "#1a1a1a", fontWeight: "500" },
-  specialKeyButton: { backgroundColor: "#FFFFFF" },
+  keyText: { fontSize: 22, color: '#1a1a1a', fontWeight: '500' },
+  specialKeyButton: { backgroundColor: '#FFFFFF' },
 });
-

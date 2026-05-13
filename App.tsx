@@ -4,6 +4,7 @@ import Ionicons from "react-native-vector-icons/Ionicons";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { WishlistProvider } from "./src/context/WishlistContext";
 import { CartProvider } from "./src/context/CartContext";
@@ -50,12 +51,21 @@ import RaiseTicketScreen from "./src/components/screens/RaiseTicketScreen";
 import { TicketProvider } from "./src/context/TicketContext";
 import {ReportProblemScreen}  from "./src/components/screens/ReportProblemScreen";
 
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      staleTime: 1000 * 60 * 5, // 5 minutes
+    },
+  },
+});
+
 // ----------------- TypeScript Stack Param List -----------------
 export type RootStackParamList = {
   Splash: undefined;
   IntroSlider: undefined;
   Login: undefined;
-  OtpScreen: { phone: string }; // ⭐ ADDED THIS
+  OtpScreen: { phone: string; mode: 'login' | 'register' };
   MainTabs: undefined;
   BrandScreen: undefined;
   AllBrandsScreen: undefined;
@@ -168,6 +178,7 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
   return (
+    <QueryClientProvider client={queryClient}>
     <UserProvider>
       <WishlistProvider>
         <CartProvider>
@@ -242,6 +253,7 @@ export default function App() {
         </CartProvider>
       </WishlistProvider>
     </UserProvider>
+    </QueryClientProvider>
   );
 }
 

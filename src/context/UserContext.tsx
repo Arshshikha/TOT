@@ -2,66 +2,80 @@ import React, {
   createContext,
   useState,
   useContext,
+  useEffect,
+  useCallback,
   ReactNode,
-  Dispatch,
-  SetStateAction,
-} from "react";
-import { ImageSourcePropType } from "react-native";
+} from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getStoredToken, removeToken, setUnauthorizedHandler } from '../api/client';
+import type { AuthUser } from '../api/types';
 
-// ✅ Define user data type
-interface User {
-  name: string;
-  phone: string;
-  profileImage: ImageSourcePropType;
-   image?: string | any;
-   
-}
+const USER_STORAGE_KEY = 'auth_user';
 
-// ✅ Define context structure
 interface UserContextType {
-  user: User;
-  setUser: Dispatch<SetStateAction<User>>;
-  login: (userData: User) => void; // ✅ added login
-  logout: () => void;
+  user: AuthUser | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  setAuthUser: (user: AuthUser) => Promise<void>;
+  logout: () => Promise<void>;
 }
 
-// ✅ Create the context
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
-// ✅ Provider component
 export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User>({
-    name: "Leena",
-    phone: "+00 9874561230",
-    profileImage: require("../../assets/images/profile.png"),
-  });
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // ✅ Login function
-  const login = (userData: User) => {
-    setUser(userData);
-  };
+  useEffect(() => {
+    async function restore() {
+      try {
+        const [token, stored] = await Promise.all([
+          getStoredToken(),
+          AsyncStorage.getItem(USER_STORAGE_KEY),
+        ]);
+        if (token && stored) {
+          setUser(JSON.parse(stored));
+        }
+      } catch {
+        // silently ignore storage errors on startup
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    restore();
+  }, []);
 
-  // ✅ Logout function resets user data
-  const logout = () => {
-    setUser({
-      name: "",
-      phone: "",
-      profileImage: require("../../assets/images/profile.png"),
-    });
-  };
+  const logout = useCallback(async () => {
+    await Promise.all([removeToken(), AsyncStorage.removeItem(USER_STORAGE_KEY)]);
+    setUser(null);
+  }, []);
+
+  useEffect(() => {
+    setUnauthorizedHandler(logout);
+  }, [logout]);
+
+  const setAuthUser = useCallback(async (authUser: AuthUser) => {
+    await AsyncStorage.setItem(USER_STORAGE_KEY, JSON.stringify(authUser));
+    setUser(authUser);
+  }, []);
 
   return (
-    <UserContext.Provider value={{ user, setUser, login, logout }}>
+    <UserContext.Provider
+      value={{
+        user,
+        isAuthenticated: !!user,
+        isLoading,
+        setAuthUser,
+        logout,
+      }}
+    >
       {children}
     </UserContext.Provider>
   );
 };
 
-// ✅ Custom hook
 export const useUser = (): UserContextType => {
   const context = useContext(UserContext);
-  if (!context) {
-    throw new Error("useUser must be used within a UserProvider");
-  }
+  if (!context) throw new Error('useUser must be used within a UserProvider');
   return context;
 };

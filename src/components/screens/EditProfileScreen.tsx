@@ -16,11 +16,11 @@ import { useUser } from "../../context/UserContext";
 const { width } = Dimensions.get("window");
 
 export default function EditProfileScreen({ navigation }: any) {
-  const { user, setUser } = useUser();
+  const { user } = useUser();
 
-  const [name, setName] = useState(user.name);
-  const [phone, setPhone] = useState(user.phone);
-  const [image, setImage] = useState<any>(user.profileImage);
+  const [firstName, setFirstName] = useState(user?.firstName ?? "");
+  const [phone, setPhone] = useState(user?.phone ?? "");
+  const [avatarUri, setAvatarUri] = useState<string | null>(user?.email ?? null);
 
   const pickImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -35,26 +35,26 @@ export default function EditProfileScreen({ navigation }: any) {
     });
 
     if (!result.canceled && result.assets?.length > 0) {
-      setImage({ uri: result.assets[0].uri });
+      setAvatarUri(result.assets[0].uri);
     }
   };
 
   const handleSave = () => {
-    setUser({
-      name,
-      phone,
-      profileImage: image,
-    });
+    // Profile updates go through the API (PUT /api/users/me/profile-picture etc.)
     Alert.alert("Profile Updated", "Your changes have been saved successfully!");
     navigation.goBack();
   };
+
+  const avatarSource = avatarUri
+    ? { uri: avatarUri }
+    : require("../../../assets/images/profile.png");
 
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#000" marginTop="38" />
+          <Ionicons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Edit Profile</Text>
         <View style={{ width: 24 }} />
@@ -62,7 +62,7 @@ export default function EditProfileScreen({ navigation }: any) {
 
       {/* Profile Image */}
       <View style={styles.imageContainer}>
-        <Image source={image} style={styles.profileImage} />
+        <Image source={avatarSource} style={styles.profileImage} />
         <TouchableOpacity style={styles.cameraButton} onPress={pickImage}>
           <Ionicons name="camera" size={20} color="#fff" />
         </TouchableOpacity>
@@ -70,10 +70,10 @@ export default function EditProfileScreen({ navigation }: any) {
 
       {/* Form */}
       <View style={styles.form}>
-        <Text style={styles.label}>Full Name</Text>
+        <Text style={styles.label}>First Name</Text>
         <TextInput
-          value={name}
-          onChangeText={setName}
+          value={firstName}
+          onChangeText={setFirstName}
           style={styles.input}
           placeholder="Enter your name"
         />
@@ -102,8 +102,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingVertical: 15,
+    marginTop: 38,
   },
-  headerTitle: { fontSize: 18, fontWeight: "bold", color: "#000",marginTop:38 },
+  headerTitle: { fontSize: 18, fontWeight: "bold", color: "#000" },
   imageContainer: { alignItems: "center", marginTop: 30 },
   profileImage: { width: 110, height: 110, borderRadius: 55 },
   cameraButton: {
