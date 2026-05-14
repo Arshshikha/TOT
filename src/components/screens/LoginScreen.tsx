@@ -1,3 +1,5 @@
+// LoginScreen.tsx
+
 import React, { useState } from 'react';
 import {
   View,
@@ -18,7 +20,7 @@ import { useLoginRequestOtp } from '../../hooks/useAuth';
 
 type RootStackParamList = {
   LoginScreen: { redirectTo?: string } | undefined;
-  OtpScreen: { phone: string; mode: 'login' | 'register' };
+  OtpScreen: { phone: string; mode: 'login' | 'register'; devOtp?: string };
   MainTabs: { screen?: string } | undefined;
 };
 
@@ -42,14 +44,23 @@ export default function LoginScreen() {
       Alert.alert('Invalid number', 'Please enter a valid 10-digit phone number.');
       return;
     }
+
     const fullPhone = `+91${phone}`;
+
     try {
-      await requestOtp.mutateAsync({ phone: fullPhone });
-      navigation.navigate('OtpScreen', { phone: fullPhone, mode: 'login' });
+      const res = await requestOtp.mutateAsync({ phone: fullPhone });
+
+      navigation.navigate('OtpScreen', {
+        phone: fullPhone,
+        mode: 'login',
+        devOtp: res?.data?.otp,
+      });
     } catch (err: any) {
       if (err?.status === 404 || err?.status === 422) {
-        // Phone not registered — switch to register flow
-        navigation.navigate('OtpScreen', { phone: fullPhone, mode: 'register' });
+        navigation.navigate('OtpScreen', {
+          phone: fullPhone,
+          mode: 'register',
+        });
       } else {
         Alert.alert('Error', err?.message ?? 'Failed to send OTP. Please try again.');
       }

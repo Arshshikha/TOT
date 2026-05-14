@@ -15,12 +15,13 @@ import { useUser } from '../../context/UserContext';
 type RouteParams = {
   phone: string;
   mode: 'login' | 'register';
+  devOtp?: string;
 };
 
 export default function OtpScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute();
-  const { phone, mode } = route.params as RouteParams;
+  const { phone, mode, devOtp } = route.params as RouteParams;
 
   const [otp, setOtp] = useState('');
   const [email, setEmail] = useState('');
@@ -55,12 +56,20 @@ export default function OtpScreen() {
           Alert.alert('Required', 'Please enter your email to complete registration.');
           return;
         }
-        const res = await registerComplete.mutateAsync({ phone, otp, email, firstName });
+
+        const res = await registerComplete.mutateAsync({
+          phone,
+          otp,
+          email,
+          firstName,
+        });
+
         await setAuthUser(res.data.user);
       } else {
         const res = await loginVerify.mutateAsync({ phone, otp });
         await setAuthUser(res.data.user);
       }
+
       navigateToApp();
     } catch (err: any) {
       Alert.alert('Error', err?.message ?? 'Verification failed. Please try again.');
@@ -72,9 +81,9 @@ export default function OtpScreen() {
       if (isRegister) {
         await registerRequestOtp.mutateAsync({ phone });
       } else {
-        // re-use the login OTP request — navigate back to let LoginScreen call it
         navigation.goBack();
       }
+
       Alert.alert('Sent', 'A new OTP has been sent to your phone.');
     } catch (err: any) {
       Alert.alert('Error', err?.message ?? 'Failed to resend OTP.');
@@ -84,7 +93,12 @@ export default function OtpScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Enter OTP</Text>
+
       <Text style={styles.subtitle}>OTP sent to {phone}</Text>
+
+      {devOtp ? (
+        <Text style={styles.testOtp}>Test OTP: {devOtp}</Text>
+      ) : null}
 
       <TextInput
         style={styles.input}
@@ -105,6 +119,7 @@ export default function OtpScreen() {
             autoCapitalize="none"
             placeholder="Email address *"
           />
+
           <TextInput
             style={styles.input}
             value={firstName}
@@ -114,7 +129,11 @@ export default function OtpScreen() {
         </>
       )}
 
-      <TouchableOpacity style={styles.button} onPress={handleVerify} disabled={isPending}>
+      <TouchableOpacity
+        style={styles.button}
+        onPress={handleVerify}
+        disabled={isPending}
+      >
         {isPending ? (
           <ActivityIndicator color="#fff" />
         ) : (
@@ -130,9 +149,31 @@ export default function OtpScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, justifyContent: 'center', backgroundColor: '#fff' },
-  title: { fontSize: 28, fontWeight: 'bold', textAlign: 'center', marginBottom: 10 },
-  subtitle: { textAlign: 'center', marginBottom: 20, fontSize: 16, color: '#555' },
+  container: {
+    flex: 1,
+    padding: 20,
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  subtitle: {
+    textAlign: 'center',
+    marginBottom: 10,
+    fontSize: 16,
+    color: '#555',
+  },
+  testOtp: {
+    textAlign: 'center',
+    marginBottom: 20,
+    fontSize: 16,
+    color: '#FF6600',
+    fontWeight: 'bold',
+  },
   input: {
     borderWidth: 1,
     borderColor: '#ccc',
@@ -148,7 +189,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
-  buttonText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
-  resendButton: { alignItems: 'center', padding: 10 },
-  resendText: { color: '#FF6600', fontSize: 15 },
+  buttonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  resendButton: {
+    alignItems: 'center',
+    padding: 10,
+  },
+  resendText: {
+    color: '#FF6600',
+    fontSize: 15,
+  },
 });
